@@ -5,6 +5,10 @@ COPY pubspec.* .
 RUN dart pub get
 COPY . .
 RUN dart pub get --offline
+
+RUN dart pub global activate dart_frog_cli
+ENV PATH="$PATH:/root/.pub-cache/bin"
+
 RUN dart_frog build
 
 FROM dart:stable
