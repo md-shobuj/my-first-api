@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:dart_frog/dart_frog.dart';
-import 'package:sqlite3/sqlite3.dart';
-
+import 'package:postgres/postgres.dart';
 
 Future<Response> onRequest(RequestContext context) async{
-  final db = context.read<Database>();
+  final db = await context.read<Future<Connection>>();
   switch(context.request.method){
     case HttpMethod.get:
       return _handleGet(db);
@@ -16,15 +15,11 @@ Future<Response> onRequest(RequestContext context) async{
   }
 }
 
-Response _handleGet(Database db){
+Future<Response> _handleGet(Connection db) async{
 
-  final result = db.select('SELECT * FROM products');
+  final result = await db.execute('SELECT * FROM products');
 
-  final products = result.map((row)=>{
-    'id':row['id'],
-    'name':row['name'],
-    'price':row['price'],
-     }).toList();
+  final products = result.map((row) => row.toColumnMap()).toList();
 
   return Response(body: jsonEncode(products) ,
   headers: {'Content-Type':'application/json'});
@@ -32,7 +27,7 @@ Response _handleGet(Database db){
 }
 
 Future<Response> _handlePost(RequestContext context,
-Database db) async{
+Connection db) async{
  
  final Map<String,dynamic>body;
  try{
@@ -47,13 +42,13 @@ Database db) async{
     ,body: 'Name is required'
     ,headers: {'Content-Type':'application/json'});
   }
-  if(body['price'] == null || body['price'] is! double){
+  if(body['price'] == null || body['price'] is! num){
     return Response(statusCode:  400
     ,body: 'Price is required'
     ,headers: {'Content-Type':'application/json'});
   }
-  db.execute('INSERT INTO products (name,price) VALUES (?,?)',[body['name'],body['price']]);
-  final id =db.lastInsertRowId;
+  final result = await db.execute(r'INSERT INTO products (name,price) VALUES ($1,$2) RETURNING id',parameters: [body['name'],body['price']]);
+  final id = result.first.toColumnMap()['id'];
 
   return Response(statusCode:  201,
   body :jsonEncode({'id':id,'name':body['name'],'price':body['price']}),

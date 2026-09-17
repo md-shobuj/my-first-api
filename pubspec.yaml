@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   dart_frog: ^1.1.0
-  sqlite3: ^2.4.0
+  postgres: ^3.5.12
   bcrypt: ^1.2.0
   dart_jsonwebtoken: ^3.4.1
   dotenv: ^4.2.0

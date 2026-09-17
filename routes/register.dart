@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:dart_frog/dart_frog.dart';
-import 'package:sqlite3/sqlite3.dart';
+import 'package:postgres/postgres.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method != HttpMethod.post) {
     return Response(statusCode: 405, body: 'Method Not Allowed');
   }
 
-  final db = context.read<Database>();
+  final db = await context.read<Future<Connection>>();
   final body = await context.request.json() as Map<String, dynamic>;
   final email = body['email'];
   final password = body['password'];
@@ -23,8 +23,8 @@ Future<Response> onRequest(RequestContext context) async {
   final hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
   try {
-    db.execute(
-      'INSERT INTO users (email, password) VALUES (?, ?)',
+    await db.execute(
+      r'INSERT INTO users (email, password) VALUES ($1, $2)', parameters: 
       [email, hashedPassword],
     );
   } catch (e) {

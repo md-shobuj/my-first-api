@@ -1,15 +1,40 @@
-import 'package:sqlite3/sqlite3.dart';
+import 'package:postgres/postgres.dart';
 
-Database openDb() {
-  final db = sqlite3.open('products.db');
+Future<Connection> openDb(String databaseUrl) async {
+  final uri = Uri.parse(databaseUrl);
 
-  db.execute('''
-    CREATE TABLE IF NOT EXISTS products
-    (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, price REAL NOT NULL)
-  ''');
+  final connection = await Connection.open(
+    Endpoint(
+      host: uri.host,
+      port: 5432,
+      database: uri.path.substring(1),
+      username: uri.userInfo.split(':')[0],
+      password: uri.userInfo.split(':')[1],
+    ),
+    settings: const ConnectionSettings(sslMode: SslMode.require),
+  );
 
-  db.execute('''Create Table if Not Exists users
-  (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, password TEXT NOT NULL)''');
 
-  return db;
+   await connection.execute('''
+  CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    price REAL NOT NULL
+  )
+''');
+
+await connection.execute('''
+  CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
+  )
+''');
+    
+
+    return connection;
+    
+  
+    
+ 
 }
